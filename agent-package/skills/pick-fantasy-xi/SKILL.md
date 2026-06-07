@@ -7,87 +7,123 @@ description: Select the best 11 eligible players for the Fantasy XI each matchda
 
 Use this skill when choosing the daily Fantasy XI for the tournament.
 
-## Step-by-Step Process
+## HARD FORMATION RULES — READ FIRST, CHECK LAST
 
-### Step 1 — Load the game board
-Read `game-board/players.json`, `game-board/matches.json`, and `game-board/teams.json`.
-Only consider players whose `eligible` field is `true` for today's matchday.
+These rules are ABSOLUTE. A lineup that breaks any of these is INVALID and scores 0.
 
-### Step 2 — Score every eligible player using this priority system
+```
+EXACTLY 1  goalkeeper   (position = GK)
+EXACTLY 3, 4, or 5  defenders   (position = DEF)
+EXACTLY 3, 4, or 5  midfielders (position = MID)
+EXACTLY 1, 2, or 3  forwards    (position = FWD)
+EXACTLY 11 players total
+```
 
-Assign a value score to each player using the following logic (higher = better pick):
+**BANNED formations (DO NOT USE):**
+- 1 GK / 3 DEF / 2 MID / 5 FWD → INVALID (5 FWD > max 3, 2 MID < min 3)
+- 1 GK / 2 DEF / 4 MID / 4 FWD → INVALID (2 DEF < min 3, 4 FWD > max 3)
+- 1 GK / 3 DEF / 3 MID / 4 FWD → INVALID (4 FWD > max 3)
+- Any lineup with fewer than 3 MID → INVALID
+- Any lineup with more than 3 FWD → INVALID
 
-**Likelihood of earning base points (+2 start, +2 for 60+ min)**
-- Prefer players listed as `starter: true` or with a high starts-to-appearances ratio in their metrics.
-- Avoid players flagged as injured, suspended, or uncertain starters.
-- If no lineup data is available, prefer players who started in their team's last match.
+**VALID formations (pick one):**
+- 1-4-4-2  (1 GK, 4 DEF, 4 MID, 2 FWD) ← DEFAULT
+- 1-4-3-3  (1 GK, 4 DEF, 3 MID, 3 FWD)
+- 1-4-5-1  (1 GK, 4 DEF, 5 MID, 1 FWD)
+- 1-5-3-2  (1 GK, 5 DEF, 3 MID, 2 FWD)
+- 1-5-4-1  (1 GK, 5 DEF, 4 MID, 1 FWD)
+- 1-3-5-2  (1 GK, 3 DEF, 5 MID, 2 FWD)
+- 1-3-4-3  (1 GK, 3 DEF, 4 MID, 3 FWD)
 
-**Goal and assist threat (forwards and attacking midfielders)**
-- Award bonus priority to players who have scored or assisted in recent World Cup matches.
-- Prefer players from teams ranked high in attack metrics (goals scored, shots on target).
-- A forward from a strong team in a weak-opposition match is your best pick.
+Use **1-4-4-2** unless there is a strong reason to deviate.
 
-**Clean sheet value (defenders and goalkeepers)**
-- Prefer defenders and GKs from teams with low goals-conceded metrics.
-- If a team is a heavy favourite, their backline is high value: +2 start +2 minutes +4 clean sheet = 8 points minimum.
-- Pick only ONE goalkeeper. Choose the GK of the team most likely to keep a clean sheet.
+---
 
-**Penalty takers**
-- If the player metrics indicate a player takes penalties, increase their forward/midfielder priority, since penalties count as goals.
+## Step 1 — Load the game board
 
-**Avoid**
-- Players with recent yellow card history (risk of -1 points).
-- Players who frequently come off before 60 minutes.
-- Players from teams in mismatched fixtures where they are likely to rotate or rest starters.
+Read `game-board/players.json`. Each player has a `position` field: GK, DEF, MID, or FWD.
+Only consider players where `eligible` is `true`.
+Read `game-board/matches.json` and `game-board/teams.json` for match context.
 
-### Step 3 — Build the formation
+---
 
-Use a formation that maximises value from the available player pool. Default to:
-- 1 GK
-- 4 DEF
-- 4 MID
-- 2 FWD
+## Step 2 — Slot-fill procedure (follow in order)
 
-If the pool has several high-value forwards available and defenders are weaker, consider 1-4-3-3. If clean sheets are very likely for two strong teams, consider 1-5-3-2 to stack defenders.
+Fill each slot category separately. Never count a player in two categories.
 
-**Hard rules (never break these):**
-- Exactly 1 goalkeeper.
-- 3 to 5 defenders.
-- 3 to 5 midfielders.
-- 1 to 3 forwards.
-- Exactly 11 player IDs total.
-- All 11 player IDs must come from `game-board/players.json` for this matchday and be marked eligible.
+### Slot A: Goalkeeper (fill exactly 1)
 
-### Step 4 — Rank and select the top 11
+Pick the 1 best eligible GK from `game-board/players.json` where `position = GK`.
+Prefer the GK whose team is most likely to keep a clean sheet (low goals conceded, strong defence, weaker opponent).
 
-Build a ranked list from Step 2. Fill the formation slots in this order:
-1. Best available GK (1 slot).
-2. Best available defenders by value score (fill 4 slots; add a 5th only if two elite clean-sheet defenders beat a forward pick).
-3. Best available midfielders by value score (fill 3–4 slots; prefer box-to-box or attacking midfielders over deep-lying defensive midfielders).
-4. Best available forwards (fill remaining slots up to 11 total).
+### Slot B: Defenders (fill exactly 3, 4, or 5 — default 4)
 
-If a slot cannot be filled with a clearly better option, choose the player with the most starts and the fewest injury flags.
+Pick only players where `position = DEF`.
+Rank by: (1) team likely to keep clean sheet, (2) starter likelihood, (3) minutes played.
+Fill 4 slots by default. Add a 5th DEF only if two elite clean-sheet defenders clearly outvalue a forward.
+Never go below 3 DEF.
 
-### Step 5 — Final validity check
+### Slot C: Midfielders (fill exactly 3, 4, or 5 — default 4)
 
-Before submitting, verify:
-- Exactly 11 player IDs selected.
-- All IDs appear in `game-board/players.json` for this matchday.
-- Positions match the formation rules above.
-- No duplicate IDs.
+Pick only players where `position = MID`.
+Rank by: (1) goal/assist record, (2) starter likelihood, (3) attacking role (attacking MID > defensive MID).
+Fill 4 slots by default. **NEVER fill fewer than 3 MID slots.**
 
-### Step 6 — Write the strategy field
+### Slot D: Forwards (fill exactly 1, 2, or 3 — default 2)
 
-Briefly explain in 1–2 sentences which teams you leaned on, why, and any notable picks. Example: "Loaded defenders from Brazil and France who face weak opposition for likely clean sheets; added Mbappé as the primary goal threat."
+Fill remaining slots to reach exactly 11 total: `FWD slots = 11 - 1 GK - DEF count - MID count`.
+Pick only players where `position = FWD`.
+**NEVER fill more than 3 FWD slots.**
+If the math produces 0 or a negative number for FWD, increase MID or DEF count by 1 less and try again.
 
-## Tiebreaker Rules
+### Slot-count verification before submitting
 
-When two players are equally valued:
-1. Prefer the player from the team more likely to win the match (check `teams.json` strength or standings).
-2. Prefer the player with more appearances this tournament.
-3. Prefer the player in the position that earns more bonus points (forward > midfielder > defender > GK, unless clean sheet value flips it).
+Count your selections:
+- GK count = 1 ✅ or ❌
+- DEF count is 3, 4, or 5 ✅ or ❌
+- MID count is 3, 4, or 5 ✅ or ❌
+- FWD count is 1, 2, or 3 ✅ or ❌
+- Total = 11 ✅ or ❌
 
-## References
+If any check is ❌, STOP and rebuild from Step 2. Do not submit an invalid lineup.
 
-See `references/position-scoring.md` for a quick scoring cheat-sheet.
-See `references/formation-guide.md` for formation decision logic.
+---
+
+## Step 3 — Player selection within each slot
+
+Within each position group, rank players by expected points:
+
+**Base points (everyone):** +2 for starting + 2 for 60+ minutes = 4 pts floor if they start.
+- Prefer players marked as starters or with high starts-to-appearances ratio.
+- Avoid injured, suspended, or rotation-risk players.
+
+**GK/DEF bonus:** +4 clean sheet if team concedes 0. Stack defenders from dominant teams in easy fixtures.
+
+**MID/FWD bonus:** +6 per goal, +4 per assist. Prefer players with recent goal/assist record.
+
+**Penalties:** If a player is the designated penalty taker, increase their priority.
+
+**Avoid:** Players with recent yellow card history (-1 risk), players who regularly sub off before 60 min.
+
+---
+
+## Step 4 — Final check before outputting
+
+Run this checklist:
+
+1. [ ] Exactly 11 player IDs in `fantasy_xi`
+2. [ ] All IDs exist in `game-board/players.json` and are eligible today
+3. [ ] GK count = 1
+4. [ ] DEF count is 3–5
+5. [ ] MID count is 3–5
+6. [ ] FWD count is 1–3
+7. [ ] No duplicate IDs
+
+If any item is unchecked, fix the lineup before returning the JSON answer.
+
+---
+
+## Step 5 — Write the strategy field
+
+1–2 sentences: which teams you drew from, why, and any notable picks.
+Example: "Stacked Morocco's defence for a likely clean sheet vs Qatar; added Afif as the primary goal threat. Used 1-4-4-2."
