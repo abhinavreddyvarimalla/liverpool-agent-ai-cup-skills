@@ -69,12 +69,24 @@ Pick only players where `position = MID`.
 Rank by: (1) goal/assist record, (2) starter likelihood, (3) attacking role (attacking MID > defensive MID).
 Fill 4 slots by default. **NEVER fill fewer than 3 MID slots.**
 
-### Slot D: Forwards (fill exactly 1, 2, or 3 — default 2)
+### Slot D: Forwards (fill exactly 1 or 2 — default 2)
 
-Fill remaining slots to reach exactly 11 total: `FWD slots = 11 - 1 GK - DEF count - MID count`.
 Pick only players where `position = FWD`.
-**NEVER fill more than 3 FWD slots.**
-If the math produces 0 or a negative number for FWD, increase MID or DEF count by 1 less and try again.
+
+Fill exactly the number of forward slots required by the chosen valid formation:
+- 2 forwards for 1-4-4-2
+- 1 forward for 1-4-5-1
+- 2 forwards for 1-5-3-2
+- 1 forward for 1-5-4-1
+- 2 forwards for 1-3-5-2
+
+Do not calculate forward slots using remaining total spots.
+
+Do not select 4, or 5 forwards.
+
+If there are many attractive forwards, rank them and choose only the best 1 or 2 required by the formation.
+
+If the lineup already has 2 forwards, all remaining picks must be defenders or midfielders.
 
 ### Slot-count verification before submitting
 
