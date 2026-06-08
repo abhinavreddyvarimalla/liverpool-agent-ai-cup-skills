@@ -1,44 +1,17 @@
-# Formation Decision Guide
+# Formation Guide
 
-## Default: 4-4-2 (balanced)
+Use only 1-4-4-2.
 
-Use when you have no strong signal either way. Solid floor, decent ceiling.
+Required counts:
 
-- GK x1
-- DEF x4
-- MID x4
-- FWD x2
+- GK: exactly 1
+- DEF: exactly 4
+- MID: exactly 4
+- FWD: exactly 2
+- Total: exactly 11
 
-## Clean Sheet Stack: 5-3-2
+Do not use 4-3-3, 3-4-3, 5-3-2, 5-4-1, or any other flexible formation.
 
-Use when 2+ strong teams in today's fixtures face weak opposition and are heavy favourites. Stacking 5 defenders from those teams can yield 40 points just from starts + minutes + clean sheets.
+If the lineup has extra goalkeepers, extra forwards, too few midfielders, or the wrong total, rebuild it from scratch.
 
-- GK x1
-- DEF x5
-- MID x3
-- FWD x2
-
-## Attack Stack: 4-3-3
-
-Use when fixtures are high-scoring (both teams attack heavily, GK clean sheet unlikely) and several elite forwards are available.
-
-- GK x1
-- DEF x4
-- MID x3
-- FWD x3
-
-## 3-4-3 (all-in on attack)
-
-Use only if three elite forwards with goal records are available AND no clean sheets are expected today.
-
-- GK x1
-- DEF x3
-- MID x4
-- FWD x3
-
-## Decision Rule
-
-1. Count how many matches today feature a heavy favourite (likely clean sheet team).
-2. If 2 or more such teams exist → lean 5-3-2 or 4-4-2.
-3. If today's matches are all close, high-scoring fixtures → lean 4-3-3.
-4. If uncertain → use 4-4-2.
+Validity is more important than upside.
