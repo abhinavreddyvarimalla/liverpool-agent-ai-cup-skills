@@ -88,6 +88,8 @@ If choosing Risk Play:
 3. Do not include `bet_points`, `stake`, or `stake_percent`.
 4. Prefer Green claims.
 5. If unsure, use `null`.
+   Diversification note:
+Prefer strong players from favored teams, but avoid selecting too many low-upside players from one team unless that team has clear clean-sheet or attacking advantage. If two players are similar, prefer the player from the stronger expected team or the player with better goal/assist potential.
 
 ## Final check
 
