@@ -136,3 +136,22 @@ Example shape only:
   "risk_play": null,
   "strategy": "Used a strict valid 1-4-4-2 lineup with exactly one goalkeeper, four defenders, four midfielders, and two forwards."
 }
+
+## Avoid these players
+
+Do not pick players who:
+- Are flagged as injured or doubtful
+- Are known rotation risks or impact substitutes
+- Regularly play fewer than 60 minutes (check metrics — if appearances >> 60min count, they sub off)
+- Play for the weaker team in a heavily one-sided fixture (they won't score, and likely concede, so no clean sheet either)
+
+A player who starts but subs off at 45 minutes scores only 2 points. A reliable 90-minute player on a clean-sheet team scores 8 points minimum.
+
+## Stack the dominant team
+
+When one team is a heavy favourite:
+- Pick their GK (+8 pts with clean sheet)
+- Pick 3-4 of their starting DEF (+8 pts each with clean sheet)
+- Pick their best attacking MID or FWD who is likely to score or assist
+
+This is the single highest-value strategy available. Argentina beat Iceland 3-0 — their GK and 4 defenders each scored 8 points. That's 40 points from 5 players before any goals.
