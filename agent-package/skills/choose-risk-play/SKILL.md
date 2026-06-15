@@ -1,75 +1,84 @@
 ---
 name: choose-risk-play
-description: Choose a Risk Play claim each matchday to earn bonus points.
+description: Choose a Risk Play claim each matchday to earn bonus points while avoiding obviously bad bets.
 ---
 
 # Choose Risk Play
 
-## Default behaviour: ALWAYS use Risk Play
+## Track record so far
 
-Do not skip Risk Play. Every matchday, submit a Risk Play claim unless team points are 0 or below.
+- Jun 12: `no_goal_first_10` → CORRECT (+13)
+- Jun 13: `no_goal_first_10` → CORRECT (+18)
+- Jun 14: `no_goal_first_10` → WRONG (-20), match ended 7-1 with a goal in minute 6
 
-If team points are 0 or below: set `risk_play` to `null` and stop. Otherwise always pick a claim.
+`no_goal_first_10` is a reasonable default (won 2 of 3 so far) but fails badly when one team is a massive favourite likely to attack from the first whistle.
 
-## Default claim: no_goal_first_10
+## Step 0 — Check team points
 
-If you are unsure which claim to pick, use `no_goal_first_10` on the match between the two strongest teams today.
+Read `game-board/standings-before.json`.
+- If team points are 0 or below: `risk_play: null`, stop.
+- Otherwise continue. Do not skip by default — Risk Play has been net positive (+13, +18, -20 = +11 over 3 days).
 
-This claim wins in roughly 8 out of 10 World Cup matches. It is the safest bet available.
+## Step 1 — Identify the biggest mismatch match today
 
-## Claim selection (pick the best one, in this order)
+Look at `game-board/matches.json` and `game-board/teams.json`. Find the match with the largest gap in team strength (rankings, recent goal difference, attack/defence metrics).
 
-### Step 1 — Check if a dominant team is playing
+## Step 2 — Pick the claim based on match type
 
-Is one team clearly stronger (heavy favourite, high-ranked, strong attack)?
+### If there IS a clear heavy-favourite mismatch:
+- Use `match_2plus_goals` (Green) on that match — near-certain when one side dominates
+- Or `team_scores_first` (Yellow) with the favourite's team_id — favourites usually score first
+- Avoid `no_goal_first_10` on this match specifically
 
-If YES, pick one of:
-- `no_goal_first_10` on that match (safest, ~80% hit rate)
-- `team_scores_first` with the dominant team_id (good if they press early)
-- `match_2plus_goals` if both teams attack freely (~70% hit rate in open games)
+### If today's matches are all close/balanced (no big mismatch):
+- Use `no_goal_first_10` (Green) on the most cautious-looking fixture — this is your proven 2/3 default
+- Or `both_teams_score` (Yellow) if both teams in a balanced match have decent attack
 
-### Step 2 — If all matches are evenly balanced
+### If genuinely unsure:
+- Default to `no_goal_first_10` on the match between the two most evenly-matched/defensive teams (not the biggest mismatch match)
 
-Pick `no_goal_first_10` on the most defensive-looking match. Even in open games, the first 10 minutes rarely produce a goal.
+## Step 3 — Red claims
 
-### Step 3 — Never use these unless you have very strong evidence
+Only with very strong evidence:
+- `team_wins_by_3plus` if a team has a track record of big wins against similar opponents
+- `player_scores_2plus` for a confirmed-starting in-form striker in a favourable matchup
 
-- `exact_score` — almost impossible to predict
-- `team_wins_by_3plus` — rare
-- `team_comeback_win` — rare
-- `match_goes_to_penalties` — knockout only, very hard to predict
+## ID validation
 
-## Stakes reminder
-
-- Green claim (no_goal_first_10, match_2plus_goals, etc.): 15% of team points
-- Yellow claim (both_teams_score, team_scores_first, player_scores): 25% of team points
-- Red claim: 35% of team points
-
-Prefer Green claims. The downside is small (15%) and the upside compounds over the tournament.
-
-## ID rules
-
-- `claim_id` must come from `game-board/claim-catalog.json`
-- `match_id` must come from `game-board/matches.json` for today
-- `team_id` (if required) must be one of the two teams in that match
-- `player_id` (if required) must be a player from one of the two teams in that match
+- `claim_id` from `game-board/claim-catalog.json`
+- `match_id` from `game-board/matches.json` for today
+- `team_id`/`player_id` (if required) must belong to that match
 
 ## Output format
 
 ```json
-{
-  "claim_id": "no_goal_first_10",
-  "match_id": "<match_id from game-board/matches.json>"
-}
+{"claim_id": "no_goal_first_10", "match_id": "<match_id>"}
 ```
-
-Or with team:
+or
 ```json
-{
-  "claim_id": "team_scores_first",
-  "match_id": "<match_id>",
-  "team_id": "<team_id>"
-}
+{"claim_id": "match_2plus_goals", "match_id": "<match_id>"}
+```
+or
+```json
+{"claim_id": "team_scores_first", "match_id": "<match_id>", "team_id": "<team_id>"}
+```
+or
+```json
+"risk_play": null
 ```
 
-Do not include `bet_points`, `stake`, or `stake_percent`.
+## Stakes
+
+- Green: 15% of team points
+- Yellow: 25% of team points
+- Red: 35% of team points
+
+## AGGRESSIVE MODE — consider Yellow/Red for extreme mismatches
+
+For teams trying to close a points gap, Green claims (15% stake) cap upside. When a match shows a genuinely extreme mismatch (e.g. a top-ranked team vs a team with a poor goal difference and weak recent form), consider:
+
+- `team_scores_first` (Yellow, 25%) with the dominant team's `team_id` — favourites in extreme mismatches almost always score first
+- `player_scores` (Yellow, 25%) for the dominant team's confirmed-starting top striker with a recent goal record
+- `player_scores_2plus` (Red, 35%) ONLY if that striker has scored 2+ in a recent match against similar opposition
+
+Use Yellow/Red selectively — not every day, only when the mismatch is clear and the player/team picked is a confirmed starter with strong recent form. On balanced or unclear matchdays, stick to the Green default (`no_goal_first_10` or `match_2plus_goals` per the match-type logic above).
