@@ -1,6 +1,6 @@
 ---
 name: pick-fantasy-xi
-description: Pick a valid Fantasy XI using a strict 1-4-4-2 formation.
+description: Pick a valid Fantasy XI using a strict 1-4-4-2 formation, prioritizing players who will actually start and play.
 ---
 
 # Pick Fantasy XI
@@ -8,6 +8,23 @@ description: Pick a valid Fantasy XI using a strict 1-4-4-2 formation.
 Use this skill to answer the daily AI Agent Fantasy World Cup prompt.
 
 Return one plain JSON object only.
+
+## THE #1 RULE: DO NOT PICK PLAYERS WHO WON'T PLAY
+
+Across three matchdays, the single biggest point loss was picking players who returned "Did Not Play Or Missing Stats" (0 points) or "Played No Scoring Events" with no minutes.
+
+- Jun 12: 6 of 11 players scored 0 (mostly Did Not Play)
+- Jun 13: 3 of 11 players scored 0, including a famous name (Neymar) who did not play
+- Jun 14: clean sheets failed but at least all 11 players started and played
+
+**A guaranteed 4-point player (starts + plays 60) beats a "star" player who might score 0 because they're rotated, benched, or injured.**
+
+Before picking ANY player, check `game-board/players.json` for signals like:
+- `starter` / `is_starter` field — if true or high probability, prioritize heavily
+- recent appearance/minutes data — if a player has low recent minutes, AVOID
+- `eligible` must be true
+
+If the data does not clearly indicate a player will start, DO NOT pick them on reputation alone. Prefer a less famous player with clear starting/minutes signals over a star name with uncertain status.
 
 ## Non-negotiable lineup
 
@@ -39,13 +56,15 @@ Do not use any other formation.
 
 Follow this order exactly:
 
-1. Pick the best eligible GK.
-2. Pick the best 4 eligible DEF players.
-3. Pick the best 4 eligible MID players.
-4. Pick the best 2 eligible FWD players.
+1. Pick the best eligible GK who is confirmed/likely to start.
+2. Pick the best 4 eligible DEF players who are confirmed/likely to start.
+3. Pick the best 4 eligible MID players who are confirmed/likely to start.
+4. Pick the best 2 eligible FWD players who are confirmed/likely to start.
 5. Stop.
 
 Do not keep selecting players after the slots are full.
+
+**At every step, "confirmed starter" beats "higher ceiling but uncertain status."**
 
 ## Player rules
 
@@ -64,22 +83,36 @@ Do not duplicate player IDs.
 
 ## Ranking strategy
 
-Within each position group, prefer:
+Within each position group, prefer in this exact order:
 
-1. Likely starters
-2. Players likely to play 60+ minutes
-3. Strong team context
-4. Good recent metrics from the game board
-5. Clean-sheet potential for GK and DEF
-6. Goal and assist potential for MID and FWD
+1. **Confirmed starter / high start probability** (most important — avoids the 0-point trap)
+2. Likely to play 60+ minutes (avoid known rotation risks, injury doubts)
+3. Goal and assist potential for MID and FWD (recent scoring/assist record)
+4. Strong team context (favourite in today's fixture)
+5. Clean-sheet potential for GK and DEF (treat as a bonus, not the main reason to pick — see below)
 
-Validity is more important than upside.
+A guaranteed starter with modest output beats a star with uncertain status. Validity AND playing time are more important than upside.
+
+## Clean sheets are a bonus, not a guarantee
+
+Even teams that win big (e.g. 7-1) can concede and lose the clean-sheet bonus. Do not pick defenders purely betting on a clean sheet. Pick defenders who:
+- Are confirmed starters for a team facing a much weaker opponent
+- Have NOT conceded in recent matches
+
+If clean sheet is uncertain, the defender's realistic expected value is the 4-point floor (start + 60 min). Compare that against attacking midfielders/forwards who get goal/assist bonuses (+4 to +16) regardless of clean sheet status — these are often better picks than a 5th defender.
+
+## Stack the dominant team's attack
+
+When one team is a heavy favourite:
+- Pick their GK if a clean sheet looks likely (bonus, not guaranteed)
+- Pick 2-3 of their confirmed-starting attacking MID/FWD — these score regardless of clean sheet outcome
+- Don't over-invest in their defenders purely for clean-sheet hopes
 
 ## Risk Play
 
-Risk Play is optional.
+Risk Play is optional but should be used when confidence is reasonable — do not skip by default.
 
-Use `risk_play: null` unless a Green claim is clearly favorable.
+Use `risk_play: null` only if team points are 0 or below, or if no claim has reasonable confidence.
 
 If choosing Risk Play:
 
@@ -87,7 +120,7 @@ If choosing Risk Play:
 2. Use only match IDs from `game-board/matches.json`.
 3. Do not include `bet_points`, `stake`, or `stake_percent`.
 4. Prefer Green claims.
-5. If unsure, use `null`.
+5. See the choose-risk-play skill for full claim-selection logic.
 
 ## Final check
 
@@ -104,6 +137,8 @@ The answer is valid only if:
 If GK is 2 or more, remove extra GK immediately.
 
 If the counts are not exactly correct, rebuild the lineup from scratch.
+
+Also verify: every single one of the 11 players has a clear signal they will start and play today. If any player's starting status is unknown or doubtful, replace them with a confirmed starter from the same position pool, even if that means a "smaller name."
 
 ## Output format
 
@@ -134,24 +169,22 @@ Example shape only:
     "forward_id_2"
   ],
   "risk_play": null,
-  "strategy": "Used a strict valid 1-4-4-2 lineup with exactly one goalkeeper, four defenders, four midfielders, and two forwards."
+  "strategy": "Built a 1-4-4-2 lineup of confirmed starters only, avoiding any player with uncertain playing-time status, and stacked the attacking midfield of today's strongest favourite."
 }
 
-## Avoid these players
+## AGGRESSIVE MODE — hard gate on starter confirmation
 
-Do not pick players who:
-- Are flagged as injured or doubtful
-- Are known rotation risks or impact substitutes
-- Regularly play fewer than 60 minutes (check metrics — if appearances >> 60min count, they sub off)
-- Play for the weaker team in a heavily one-sided fixture (they won't score, and likely concede, so no clean sheet either)
+On Jun 12, 6 of 11 players (St. Clair, Davies, Osorio, Shaffelburg, Choinière, Deko) returned "Did Not Play Or Missing Stats" — a complete zero. This is the single largest point leak observed.
 
-A player who starts but subs off at 45 minutes scores only 2 points. A reliable 90-minute player on a clean-sheet team scores 8 points minimum.
+**New hard rule: if a player's starting status cannot be confirmed as likely/probable from the game board data, DO NOT select them — no exceptions, regardless of reputation, team, or potential ceiling.**
 
-## Stack the dominant team
+If an entire position group for a team looks uncertain (e.g. a team's full midfield has no clear starter signals), pull players from a DIFFERENT team's position group instead, even if that team is less "exciting." A guaranteed 4 points beats a 50/50 shot at 10 points or 0 points — the expected value favors certainty, and certainty compounds across a long tournament.
 
-When one team is a heavy favourite:
-- Pick their GK (+8 pts with clean sheet)
-- Pick 3-4 of their starting DEF (+8 pts each with clean sheet)
-- Pick their best attacking MID or FWD who is likely to score or assist
+## AGGRESSIVE MODE — hunt for goal/assist upside aggressively
 
-This is the single highest-value strategy available. Argentina beat Iceland 3-0 — their GK and 4 defenders each scored 8 points. That's 40 points from 5 players before any goals.
+Once the starter-confirmation gate is satisfied for all 11 slots, actively re-rank MID and FWD candidates by recent goal/assist output, not just "likely to start." A confirmed-starting attacking midfielder with a recent goal or assist (e.g. Kimmich +12, Vinícius +10, Musiala +10, Wirtz +8) is worth pursuing over a confirmed-starting but purely defensive player with a 4-point ceiling.
+
+Among confirmed starters, prioritize:
+1. Players with a goal or assist in their last 1-2 matches
+2. Players who are designated penalty takers
+3. Players from the most dominant attacking team in today's fixtures
